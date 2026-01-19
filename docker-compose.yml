@@ -1,0 +1,85 @@
+services:
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant-telegram-rag
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/6333'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - telegram-rag-network
+
+  # ML API (Embeddings + Reranking)
+  ml-api:
+    build:
+      context: ./ml-api
+      dockerfile: Dockerfile
+    container_name: ml-api-telegram-rag
+    ports:
+      - "8001:8001"
+    environment:
+      - EMBED_MAX_BATCH_SIZE=32
+      - EMBED_BATCH_TIMEOUT=0.01
+      - RERANK_MAX_BATCH_SIZE=16
+      - RERANK_BATCH_TIMEOUT=0.02
+    volumes:
+      - ./models_cache:/models_cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    networks:
+      - telegram-rag-network
+
+  # Telegram Bot
+  telegram-bot:
+    build:
+      context: ./telegram-bot
+      dockerfile: Dockerfile
+    container_name: telegram-rag-bot
+    env_file:
+      - ./.env
+    environment:
+      # Override service URLs for Docker networking
+      - QDRANT_URL=http://qdrant:6333
+      - ML_API_URL=http://ml-api:8001
+      # HuggingFace cache for tokenizer
+      - HF_HOME=/models_cache
+    volumes:
+      - ./telegram-bot/uploads:/app/uploads
+      - ./telegram-bot/sample_docs:/app/sample_docs:ro
+      - ./models_cache:/models_cache
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      ml-api:
+        condition: service_healthy
+    restart: unless-stopped
+    user: root
+    networks:
+      - telegram-rag-network
+
+networks:
+  telegram-rag-network:
+    driver: bridge
+
+volumes:
+  qdrant_data:
+  models_cache:

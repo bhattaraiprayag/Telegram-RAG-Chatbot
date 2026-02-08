@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from typing import Any, AsyncGenerator, Optional
+from pathlib import Path
 
 from ..config import settings
 from ..database.qdrant_client import QdrantDB
@@ -171,7 +172,34 @@ class RAGOrchestrator:
             answer="".join(answer_parts).rstrip(),
             sources=sources,
         )
+    
+    async def summarize(self, file_name: str) -> AsyncGenerator[str, None]:
+        search_paths = [
+            Path("sample_docs") / file_name,
+            Path("uploads") / file_name
+        ]
 
+        content = None
+        for path in search_paths:
+            if path.exists():
+                with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                break
+        
+        if not content:
+            yield f"Could not find file: {file_name}"
+            return
+        
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant that SUMMARIZES documents concisely."},
+            {"role": "user", "content": f"Please summarize this document: {file_name}.\n\nCONTENT:\n{content[:10000]}"}
+        ]
+
+        # Stream from LLM provider
+        async for token in self.llm_provider.generate_streaming(
+            messages=messages, temperature=0.3, max_tokens=1024
+        ):
+            yield token
     async def _get_query_embedding(self, query: str) -> dict[str, Any]:
         """
         Get embedding for query, using cache if available.

@@ -151,3 +151,26 @@ Conversation History:
 """
 
     await update.message.reply_text(stats_text)
+
+async def summarize_command(
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
+        orchestrator: RAGOrchestrator,
+) -> None:
+    if update.message is None or not context.args:
+        await update.message.reply_text("Usage: /summarize <filename>")
+        return
+
+    file_name = " ".join(context.args)
+    await update.message.chat.send_action("typing")
+
+    response_parts = []
+    async for token in orchestrator.summarize(file_name):
+        response_parts.append(token)
+    
+    response = "".join(response_parts)
+    if len(response) > 4000:
+        for i in range(0, len(response), 4000):
+            await safe_reply(update.message, response[i: i+4000])
+    else:
+        await safe_reply(update.message, response)

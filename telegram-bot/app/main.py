@@ -19,7 +19,7 @@ from telegram.ext import (
 from .config import settings
 from .chunking import ChunkingEngine
 from .database import QdrantDB
-from .handlers.ask import ask_command, clear_command, stats_command
+from .handlers.ask import ask_command, clear_command, stats_command, summarize_command
 from .handlers.help import help_command, start_command
 from .handlers.upload import handle_document, list_files_command
 from .rag.orchestrator import RAGOrchestrator
@@ -196,6 +196,12 @@ class BotApplication:
             await list_files_command(update, context, self.db)
 
         app.add_handler(CommandHandler("files", files_handler))
+
+        # Summarize command
+        async def summarize_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            await summarize_command(update, context, self.orchestrator)
+
+        app.add_handler(CommandHandler("summarize", summarize_handler))
 
         # Document upload handler
         async def document_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):

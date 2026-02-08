@@ -10,6 +10,7 @@ I can answer questions based on documents that have been uploaded to me.
 
 **Commands:**
 • `/ask <question>` - Ask a question about the uploaded documents
+• `/summarize <file>` - Get a concise summary of the provided file/document
 • `/files` - List all indexed documents
 • `/clear` - Clear your conversation history
 • `/stats` - Show system statistics

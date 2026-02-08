@@ -263,6 +263,7 @@ class QdrantDB:
                 break
 
         return list(files.values())
+    
 
     def delete_file(self, file_hash: str) -> None:
         """

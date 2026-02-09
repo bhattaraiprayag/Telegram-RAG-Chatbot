@@ -3,8 +3,6 @@
 import asyncio
 import hashlib
 import logging
-import os
-from functools import partial
 from pathlib import Path
 
 from telegram import Update
@@ -16,8 +14,8 @@ from telegram.ext import (
     filters,
 )
 
-from .config import settings
 from .chunking import ChunkingEngine
+from .config import settings
 from .database import QdrantDB
 from .handlers.ask import ask_command, clear_command, stats_command, summarize_command
 from .handlers.help import help_command, start_command
@@ -25,7 +23,6 @@ from .handlers.upload import handle_document, list_files_command
 from .rag.orchestrator import RAGOrchestrator
 from .services.ml_api_client import MLAPIClient
 from .utils.history import HistoryManager
-
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -49,9 +46,7 @@ class BotApplication:
             db=self.db,
             ml_client=self.ml_client,
         )
-        self.history_manager = HistoryManager(
-            max_turns=settings.max_history_turns
-        )
+        self.history_manager = HistoryManager(max_turns=settings.max_history_turns)
 
     async def seed_sample_documents(self) -> None:
         """
@@ -64,8 +59,9 @@ class BotApplication:
             logger.info("No sample_docs directory found, skipping seeding")
             return
 
-        sample_files = list(SAMPLE_DOCS_DIR.glob("*.md")) + \
-                       list(SAMPLE_DOCS_DIR.glob("*.txt"))
+        sample_files = list(SAMPLE_DOCS_DIR.glob("*.md")) + list(
+            SAMPLE_DOCS_DIR.glob("*.txt")
+        )
 
         if not sample_files:
             logger.info("No sample documents found to seed")
@@ -74,6 +70,7 @@ class BotApplication:
         logger.info(f"Found {len(sample_files)} sample documents")
 
         from markitdown import MarkItDown
+
         md_converter = MarkItDown()
 
         for file_path in sample_files:
@@ -159,9 +156,7 @@ class BotApplication:
             Configured Application instance
         """
         if not settings.telegram_token:
-            raise ValueError(
-                "TELEGRAM_TOKEN not set. Please configure it in .env"
-            )
+            raise ValueError("TELEGRAM_TOKEN not set. Please configure it in .env")
 
         app = Application.builder().token(settings.telegram_token).build()
 
@@ -169,42 +164,46 @@ class BotApplication:
         app.add_handler(CommandHandler("start", start_command))
         app.add_handler(CommandHandler("help", help_command))
 
-        # Ask command with dependencies injected
-        async def ask_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-            await ask_command(
-                update, context, self.orchestrator, self.history_manager
-            )
+        async def ask_handler(
+            update: Update, context: ContextTypes.DEFAULT_TYPE
+        ) -> None:
+            await ask_command(update, context, self.orchestrator, self.history_manager)
 
         app.add_handler(CommandHandler("ask", ask_handler))
 
-        # Clear command
-        async def clear_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        async def clear_handler(
+            update: Update, context: ContextTypes.DEFAULT_TYPE
+        ) -> None:
             await clear_command(update, context, self.history_manager)
 
         app.add_handler(CommandHandler("clear", clear_handler))
 
-        # Stats command
-        async def stats_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        async def stats_handler(
+            update: Update, context: ContextTypes.DEFAULT_TYPE
+        ) -> None:
             await stats_command(
                 update, context, self.orchestrator, self.history_manager
             )
 
         app.add_handler(CommandHandler("stats", stats_handler))
 
-        # Files command
-        async def files_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        async def files_handler(
+            update: Update, context: ContextTypes.DEFAULT_TYPE
+        ) -> None:
             await list_files_command(update, context, self.db)
 
         app.add_handler(CommandHandler("files", files_handler))
 
-        # Summarize command
-        async def summarize_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        async def summarize_handler(
+            update: Update, context: ContextTypes.DEFAULT_TYPE
+        ) -> None:
             await summarize_command(update, context, self.orchestrator)
 
         app.add_handler(CommandHandler("summarize", summarize_handler))
 
-        # Document upload handler
-        async def document_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        async def document_handler(
+            update: Update, context: ContextTypes.DEFAULT_TYPE
+        ) -> None:
             await handle_document(
                 update, context, self.db, self.ml_client, self.chunking_engine
             )
@@ -231,7 +230,8 @@ class BotApplication:
 
         await app.initialize()
         await app.start()
-        await app.updater.start_polling(drop_pending_updates=True)
+        if app.updater is not None:
+            await app.updater.start_polling(drop_pending_updates=True)
 
         # Keep running until interrupted
         try:
@@ -241,7 +241,8 @@ class BotApplication:
             pass
         finally:
             logger.info("Shutting down...")
-            await app.updater.stop()
+            if app.updater is not None:
+                await app.updater.stop()
             await app.stop()
             await app.shutdown()
             await self.orchestrator.close()

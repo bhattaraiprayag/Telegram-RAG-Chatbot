@@ -10,7 +10,9 @@ from ..config import settings
 class MLAPIClient:
     """Client for the ML API service (embeddings + reranking)."""
 
-    def __init__(self, base_url: str | None = None, timeout: float | None = None) -> None:
+    def __init__(
+        self, base_url: str | None = None, timeout: float | None = None
+    ) -> None:
         """
         Initialize ML API client.
 
@@ -55,11 +57,10 @@ class MLAPIClient:
         )
 
         response.raise_for_status()
-        return response.json()
+        result: dict[str, list[Any]] = response.json()
+        return result
 
-    async def embed_single(
-        self, text: str, is_query: bool = False
-    ) -> dict[str, Any]:
+    async def embed_single(self, text: str, is_query: bool = False) -> dict[str, Any]:
         """
         Generate embedding for a single text.
 

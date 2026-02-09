@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.rag.cache import EmbeddingCache, CachedEmbedding
+from app.rag.cache import EmbeddingCache
 
 
 class TestEmbeddingCache:

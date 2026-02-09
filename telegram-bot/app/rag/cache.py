@@ -67,9 +67,7 @@ class EmbeddingCache:
         self._misses += 1
         return None
 
-    def put(
-        self, query: str, dense: list[float], sparse: dict[int, float]
-    ) -> None:
+    def put(self, query: str, dense: list[float], sparse: dict[int, float]) -> None:
         """
         Store embedding in cache.
 

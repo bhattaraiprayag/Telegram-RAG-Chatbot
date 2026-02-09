@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-This guide covers how to set up and run the Telegram RAG Bot locally and via Docker.
+This guide covers setting up and running the Telegram RAG Chatbot locally and via Docker.
 
 ## Prerequisites
 
@@ -13,45 +13,49 @@ This guide covers how to set up and run the Telegram RAG Bot locally and via Doc
 | Telegram Bot Token | - | From [@BotFather](https://t.me/BotFather) |
 | OpenAI API Key | - | For GPT-4o access |
 
-### Optional (for local development)
+### Optional (Local Development)
 
 | Tool | Version | Purpose |
 |------|---------|---------|
 | Python | 3.10+ | Runtime |
 | uv | Latest | Fast Python package manager |
-| NVIDIA GPU | CUDA 11.8+ | Accelerated ML inference |
+| NVIDIA GPU | CUDA 12.1+ | Accelerated ML inference |
 
-## Environment Setup
+## Configuration
 
-### 1. Clone and Configure
+### 1. Clone the Repository
 
 ```bash
-# Clone the repository
 git clone <repository-url>
-cd telegram-rag-bot
+cd telegram-rag-chatbot
+```
 
-# Copy environment template
+### 2. Create Environment File
+
+```bash
 cp .env.example .env
 ```
 
-### 2. Edit `.env`
+### 3. Configure Credentials
+
+Edit `.env` with your credentials:
 
 ```env
-# Required: Your Telegram bot token
-TELEGRAM_TOKEN=8130984091340912390423:AA230974nb2k345bkj2gb4j5kb2k34
+# Required
+TELEGRAM_TOKEN=your-telegram-bot-token
+OPENAI_API_KEY=sk-your-openai-api-key
 
-# Required: Your OpenAI API key
-OPENAI_API_KEY=sk-...
-
-# Optional: Adjust model
+# Optional (defaults shown)
 DEFAULT_MODEL=gpt-4o
+EMBEDDING_CACHE_SIZE=1000
+MAX_HISTORY_TURNS=3
 ```
 
 ## Deployment Options
 
 ### Option A: Docker Compose (Recommended)
 
-This is the simplest way to run the complete system.
+The simplest way to run the complete system:
 
 ```bash
 # Build and start all services
@@ -64,44 +68,59 @@ docker-compose up --build -d
 docker-compose logs -f telegram-bot
 ```
 
-**Services started:**
+**Services Started:**
+
 | Service | Port | Description |
 |---------|------|-------------|
 | qdrant | 6333 | Vector database |
-| ml-api | 8001 | Embedding + Reranking (GPU) |
-| telegram-bot | - | Your Telegram bot |
+| ml-api | 8001 | Embeddings + Reranking (GPU) |
+| telegram-bot | - | Telegram bot instance |
 
-**Note for non-GPU systems:**
-Edit `docker-compose.yml` and remove the `deploy.resources.reservations.devices` section from the `ml-api` service. The service will fall back to CPU (slower but functional).
+**Non-GPU Systems:**
+
+Edit `docker-compose.yml` and remove the GPU reservation section from `ml-api`:
+
+```yaml
+# Remove this block from ml-api service:
+deploy:
+  resources:
+    reservations:
+      devices:
+        - driver: nvidia
+          count: 1
+          capabilities: [gpu]
+```
+
+The service falls back to CPU (slower but functional).
 
 ### Option B: Local Development
 
 For development with hot-reload and debugging:
 
 ```bash
-# Start infrastructure only
+# Start infrastructure services only
 docker-compose up qdrant ml-api -d
 
-# Set up Python environment
+# Navigate to bot directory
 cd telegram-bot
+
+# Create virtual environment and install dependencies
 uv sync --dev
 
-# Activate virtual environment (Windows)
-.\.venv\Scripts\Activate.ps1
-
-# Activate virtual environment (Linux/Mac)
-# source .venv/bin/activate
+# Activate virtual environment
+.\.venv\Scripts\Activate.ps1  # Windows
+# source .venv/bin/activate   # Linux/Mac
 
 # Run tests
 pytest tests/ -v
 
-# Run the bot
+# Start the bot
 python -m app.main
 ```
 
-## Verifying the Setup
+## Verification
 
-### 1. Check services are running
+### 1. Check Service Health
 
 ```bash
 # Qdrant health
@@ -111,37 +130,38 @@ curl http://localhost:6333/healthz
 curl http://localhost:8001/health
 ```
 
-### 2. Test the bot
+### 2. Test the Bot
 
-1. Open Telegram and search for your bot (e.g., `@DocuRAGV1Bot`)
+1. Open Telegram and search for your bot
 2. Send `/start` to begin
 3. Send `/help` to see available commands
 4. Upload a document (PDF, TXT, MD, DOCX)
-5. Ask a question with `/ask What is...`
+5. Ask a question with `/ask <your question>`
+6. Summarize a document with `/summarize <filename>`
 
 ## Troubleshooting
 
-### Bot not responding
+### Bot Not Responding
 
 **Symptom:** Bot shows "online" but doesn't respond to commands.
 
 **Solutions:**
-1. Check that `TELEGRAM_TOKEN` is correctly set in `.env`
-2. Verify docker-compose logs: `docker-compose logs telegram-bot`
-3. Ensure the bot was started fresh: `docker-compose restart telegram-bot`
+1. Verify `TELEGRAM_TOKEN` is correctly set in `.env`
+2. Check logs: `docker-compose logs telegram-bot`
+3. Restart the bot: `docker-compose restart telegram-bot`
 
-### Connection to ML-API failed
+### ML-API Connection Failed
 
-**Symptom:** Error messages about embedding or reranking failures.
+**Symptom:** Embedding or reranking errors.
 
 **Solutions:**
-1. Wait for ML-API to fully initialize (can take 2-3 minutes on first start)
-2. Check ML-API health: `curl http://localhost:8001/health`
-3. Verify GPU is detected: `docker-compose logs ml-api | grep -i cuda`
+1. Wait for ML-API initialization (2-3 minutes on first start for model downloads)
+2. Check health: `curl http://localhost:8001/health`
+3. Verify GPU detection: `docker-compose logs ml-api | grep -i cuda`
 
-### Out of memory (GPU)
+### GPU Out of Memory
 
-**Symptom:** ML-API crashes with CUDA out of memory errors.
+**Symptom:** ML-API crashes with CUDA OOM errors.
 
 **Solutions:**
 1. Reduce batch sizes in `docker-compose.yml`:
@@ -153,24 +173,24 @@ curl http://localhost:8001/health
 2. Use a GPU with more VRAM
 3. Fall back to CPU (remove GPU reservation)
 
-### Document upload fails
+### Document Processing Fails
 
-**Symptom:** Bot says "Error processing document".
+**Symptom:** "Error processing document" message.
 
 **Solutions:**
 1. Check file size (max 10MB)
-2. Verify file extension is supported (.pdf, .txt, .md, .docx)
-3. Check if the document contains extractable text
+2. Verify supported extension (.pdf, .txt, .md, .docx, .epub)
+3. Ensure document contains extractable text
 4. Review logs: `docker-compose logs telegram-bot`
 
-### OpenAI API errors
+### OpenAI API Errors
 
 **Symptom:** "OpenAI API error" in responses.
 
 **Solutions:**
 1. Verify `OPENAI_API_KEY` is valid
-2. Check your OpenAI account has credits
-3. Ensure you have access to the specified model (gpt-4o)
+2. Check OpenAI account has credits
+3. Confirm access to the specified model (gpt-4o)
 
 ## Useful Commands
 
@@ -181,10 +201,10 @@ docker-compose down
 # Stop and remove volumes (fresh start)
 docker-compose down -v
 
-# Rebuild a specific service
+# Rebuild specific service
 docker-compose build telegram-bot
 
-# View real-time logs
+# Real-time logs
 docker-compose logs -f
 
 # Execute command in container
@@ -194,6 +214,6 @@ docker-compose exec telegram-bot python -c "from app.config import settings; pri
 ## Next Steps
 
 - Read [ARCHITECTURE.md](ARCHITECTURE.md) to understand the system design
-- Explore the sample documents in `telegram-bot/sample_docs/`
-- Add your own documents to create a custom knowledge base
-- Integrate additional data sources via the Qdrant API
+- Explore sample documents in `telegram-bot/sample_docs/`
+- Upload your own documents to create a custom knowledge base
+- Review [DEPLOYMENT.md](DEPLOYMENT.md) for production deployment options

@@ -2,8 +2,8 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 import httpx
+import pytest
 
 from app.services.ml_api_client import MLAPIClient
 
@@ -100,9 +100,7 @@ class TestMLAPIClientHealth:
         mock_response = MagicMock()
         mock_response.status_code = 200
 
-        with patch.object(
-            httpx.AsyncClient, "get", new_callable=AsyncMock
-        ) as mock_get:
+        with patch.object(httpx.AsyncClient, "get", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = mock_response
 
             result = await ml_client.health_check()
@@ -112,9 +110,7 @@ class TestMLAPIClientHealth:
     @pytest.mark.asyncio
     async def test_health_check_returns_false_on_error(self, ml_client):
         """Verify health check returns False on connection error."""
-        with patch.object(
-            httpx.AsyncClient, "get", new_callable=AsyncMock
-        ) as mock_get:
+        with patch.object(httpx.AsyncClient, "get", new_callable=AsyncMock) as mock_get:
             mock_get.side_effect = httpx.ConnectError("Connection refused")
 
             result = await ml_client.health_check()

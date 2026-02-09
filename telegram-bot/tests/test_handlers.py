@@ -1,13 +1,12 @@
 """Tests for Telegram command handlers."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.handlers.help import help_command, start_command, HELP_TEXT
 from app.handlers.ask import ask_command, clear_command, stats_command
+from app.handlers.help import help_command, start_command
 from app.utils.history import HistoryManager
-from app.rag.cache import EmbeddingCache
 
 
 @pytest.fixture
@@ -99,9 +98,7 @@ class TestAskCommand:
         """Verify ask command requires a query."""
         mock_context.args = []
 
-        await ask_command(
-            mock_update, mock_context, mock_orchestrator, history_manager
-        )
+        await ask_command(mock_update, mock_context, mock_orchestrator, history_manager)
 
         call_args = mock_update.message.reply_text.call_args
         assert "Please provide a question" in call_args[0][0]
@@ -113,9 +110,7 @@ class TestAskCommand:
         """Verify ask command sends RAG response."""
         mock_context.args = ["What", "is", "the", "policy"]
 
-        await ask_command(
-            mock_update, mock_context, mock_orchestrator, history_manager
-        )
+        await ask_command(mock_update, mock_context, mock_orchestrator, history_manager)
 
         # Should have sent typing action
         mock_update.message.chat.send_action.assert_called_with("typing")
@@ -131,9 +126,7 @@ class TestAskCommand:
         mock_context.args = ["test", "query"]
         user_id = mock_update.effective_user.id
 
-        await ask_command(
-            mock_update, mock_context, mock_orchestrator, history_manager
-        )
+        await ask_command(mock_update, mock_context, mock_orchestrator, history_manager)
 
         history = history_manager.get_history(user_id)
         assert len(history) == 2  # user + assistant

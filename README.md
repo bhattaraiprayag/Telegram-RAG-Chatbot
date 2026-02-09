@@ -1,146 +1,165 @@
-# Telegram RAG Bot
+# Telegram RAG Chatbot
 
-A lightweight Telegram bot with Retrieval-Augmented Generation (RAG) capabilities for document Q&A.
+A production-ready Telegram bot with **Retrieval-Augmented Generation (RAG)** capabilities for intelligent document Q&A.
 
-## Overview
+## What It Does
 
-This project implements a Telegram bot that can:
-- Answer questions based on uploaded documents
-- Use local ML infrastructure for cost-effective embeddings and reranking
-- Leverage OpenAI GPT-4o for intelligent response generation
-- Maintain conversation context across multiple turns
+This project implements a Telegram bot that transforms uploaded documents into a searchable knowledge base. Users can ask natural language questions and receive accurate, source-cited answers powered by state-of-the-art ML models.
 
-## Key Features
+| Capability | Description |
+|------------|-------------|
+| **Document Ingestion** | Upload PDF, TXT, MD, DOCX, EPUB files directly via Telegram |
+| **Intelligent Chunking** | Parent-child hierarchical splitting preserves document context |
+| **Hybrid Search** | Combines dense (semantic) + sparse (keyword) retrieval with RRF fusion |
+| **Semantic Reranking** | BGE-Reranker ensures highest-quality results |
+| **Streaming Responses** | Real-time answer generation with source citations |
+| **Conversation Memory** | Maintains context across multiple conversation turns |
 
-| Feature | Description |
-|---------|-------------|
-| **Multi-format Document Support** | PDF, TXT, MD, DOCX files |
-| **Parent-Child Chunking** | Intelligent hierarchical document splitting |
-| **Hybrid Search** | Dense + sparse vectors with RRF fusion |
-| **Semantic Reranking** | BGE-Reranker for precision |
-| **Query Caching** | LRU cache for repeated queries |
-| **Conversation Memory** | Last 3 turns per user |
-| **Source Citations** | Every answer includes references |
+## Architecture Overview
+
+The system follows a microservices pattern with three containerized components:
+
+```mermaid
+flowchart TB
+    subgraph Users["Telegram Users"]
+        User[("👤 User")]
+    end
+
+    subgraph Bot["telegram-bot Container"]
+        Handlers[Command Handlers]
+        RAG[RAG Orchestrator]
+        Cache[Embedding Cache]
+        Chunking[Chunking Engine]
+    end
+
+    subgraph ML["ml-api Container"]
+        Embed["BGE-M3 Embeddings"]
+        Rerank["BGE-Reranker"]
+    end
+
+    subgraph Storage["qdrant Container"]
+        Chunks[(Chunks Collection)]
+        Parents[(Parents Collection)]
+    end
+
+    subgraph External["External APIs"]
+        OpenAI["OpenAI GPT-4o"]
+    end
+
+    User <-->|Telegram API| Handlers
+    Handlers --> RAG
+    RAG --> Cache
+    RAG --> Chunking
+    RAG --> ML
+    RAG --> Storage
+    RAG --> OpenAI
+    ML --> Embed
+    ML --> Rerank
+```
 
 ## Project Structure
 
 ```
 .
-├── telegram-bot/           # Main Telegram bot application
+├── telegram-bot/               # Main Telegram bot application
 │   ├── app/
-│   │   ├── handlers/       # Telegram command handlers
-│   │   ├── rag/            # RAG pipeline (orchestrator, cache)
-│   │   ├── chunking/       # Parent-child document chunking
-│   │   ├── database/       # Qdrant vector database client
-│   │   ├── models/         # LLM provider (OpenAI)
-│   │   ├── services/       # ML API client
-│   │   └── utils/          # Conversation history manager
-│   ├── sample_docs/        # Pre-loaded sample documents
-│   ├── tests/              # Comprehensive test suite
+│   │   ├── handlers/           # /start, /help, /ask, /summarize, etc.
+│   │   ├── rag/                # RAG pipeline (orchestrator, cache)
+│   │   ├── chunking/           # Parent-child document chunking
+│   │   ├── database/           # Qdrant vector database client
+│   │   ├── models/             # LLM provider abstraction (OpenAI)
+│   │   ├── services/           # ML-API HTTP client
+│   │   └── utils/              # Conversation history manager
+│   ├── sample_docs/            # Pre-loaded sample documents
+│   ├── tests/                  # Comprehensive test suite
 │   └── Dockerfile
-├── ml-api/                 # Embedding + Reranking service (GPU)
-│   ├── ml_api.py           # FastAPI service
+├── ml-api/                     # GPU-accelerated ML service
+│   ├── ml_api.py               # FastAPI embeddings + reranking
 │   └── Dockerfile
-├── docker-compose.yml      # Full stack orchestration
+├── docker-compose.yml          # Full-stack orchestration
 └── docs/
-    ├── QUICKSTART.md       # Getting started guide
-    └── ARCHITECTURE.md     # Technical deep-dive
+    ├── QUICKSTART.md           # Setup and installation guide
+    ├── ARCHITECTURE.md         # Technical deep-dive
+    └── DEPLOYMENT.md           # Production deployment guide
 ```
 
 ## Quick Start
 
-### Prerequisites
-
-- Docker and Docker Compose (for containerized deployment)
-- Python 3.10+ and [uv](https://github.com/astral-sh/uv) (for local development)
-- Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
-- OpenAI API Key
-
-### Configuration
-
-1. Copy the example environment file:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Edit `.env` with your credentials:
-   ```env
-   TELEGRAM_TOKEN=your-telegram-bot-token
-   OPENAI_API_KEY=your-openai-api-key
-   ```
-
-### Run with Docker Compose
-
 ```bash
+# 1. Clone and configure
+git clone <repository-url>
+cd telegram-rag-chatbot
+cp .env.example .env
+# Edit .env with your credentials
+
+# 2. Run with Docker Compose
 docker-compose up --build
 ```
 
-This starts:
-- **Qdrant** (vector database) on port 6333
-- **ML-API** (embeddings/reranking) on port 8001
-- **Telegram Bot** (your bot instance)
+The bot requires:
+- **Telegram Bot Token** (from [@BotFather](https://t.me/BotFather))
+- **OpenAI API Key** (for GPT-4o)
 
-### Run Locally (Development)
-
-```bash
-cd telegram-bot
-uv sync --dev
-.venv/Scripts/Activate.ps1  # Windows
-# source .venv/bin/activate  # Linux/Mac
-
-# Start dependencies
-docker-compose up qdrant ml-api -d
-
-# Run tests
-pytest tests/ -v
-
-# Run bot
-python -m app.main
-```
+See [QUICKSTART.md](QUICKSTART.md) for detailed setup instructions.
 
 ## Bot Commands
 
 | Command | Description |
 |---------|-------------|
-| `/start` | Welcome message |
-| `/help` | Usage instructions |
-| `/ask <question>` | Ask a question about documents |
-| `/files` | List indexed documents |
-| `/stats` | System statistics |
-| `/clear` | Clear conversation history |
+| `/start` | Welcome message and onboarding |
+| `/help` | Usage instructions and tips |
+| `/ask <question>` | Ask a question about indexed documents |
+| `/summarize <file>` | Generate a concise summary of a document |
+| `/files` | List all indexed documents |
+| `/stats` | View cache and history statistics |
+| `/clear` | Clear your conversation history |
+
+**File Upload:** Send any supported document directly to the bot for automatic indexing.
 
 ## Technology Stack
 
-- **Bot Framework**: [python-telegram-bot](https://python-telegram-bot.org/) 22.x
-- **Vector Database**: [Qdrant](https://qdrant.tech/)
-- **Embeddings**: [BGE-M3](https://huggingface.co/BAAI/bge-m3) (1024-dim dense + sparse)
-- **Reranking**: [BGE-Reranker-Base](https://huggingface.co/BAAI/bge-reranker-base)
-- **LLM**: OpenAI GPT-4o
-- **Package Manager**: [uv](https://github.com/astral-sh/uv)
+| Component | Technology |
+|-----------|------------|
+| Bot Framework | [python-telegram-bot](https://python-telegram-bot.org/) 22.x |
+| Vector Database | [Qdrant](https://qdrant.tech/) |
+| Embeddings | [BGE-M3](https://huggingface.co/BAAI/bge-m3) (1024-dim dense + sparse) |
+| Reranking | [BGE-Reranker-Base](https://huggingface.co/BAAI/bge-reranker-base) |
+| LLM | OpenAI GPT-4o |
+| Package Manager | [uv](https://github.com/astral-sh/uv) |
 
 ## Documentation
 
-- [**QUICKSTART.md**](QUICKSTART.md) - Detailed setup instructions
-- [**ARCHITECTURE.md**](ARCHITECTURE.md) - System design and data flow
+| Document | Purpose |
+|----------|---------|
+| [QUICKSTART.md](QUICKSTART.md) | Installation and setup guide |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System design and data flow |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Production deployment strategies |
+| [ROADMAP.md](ROADMAP.md) | Project milestones and future plans |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
 
 ## Development
 
-### Running Tests
-
 ```bash
+# Navigate to bot directory
 cd telegram-bot
-pytest tests/ -v --cov=app --cov-report=term-missing
-```
 
-### Code Quality
+# Install dependencies with uv
+uv sync --dev
 
-```bash
-# Format code
-black app/
+# Activate virtual environment
+.venv/Scripts/Activate.ps1  # Windows
+# source .venv/bin/activate  # Linux/Mac
 
-# Lint
+# Run tests
+pytest tests/ -v --cov=app
+
+# Code quality
 ruff check app/
-
-# Type check
+ruff format app/
 mypy app/
 ```
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

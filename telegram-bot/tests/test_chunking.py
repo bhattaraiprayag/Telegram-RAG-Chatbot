@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.chunking import ChunkingEngine, ParentChunk, ChildChunk
+from app.chunking import ChildChunk, ChunkingEngine, ParentChunk
 
 
 @pytest.fixture
@@ -65,9 +65,7 @@ class TestChunkingEngine:
             assert parent.header_path != ""
             assert parent.id != ""
 
-    def test_children_reference_parents(
-        self, chunking_engine, sample_markdown_content
-    ):
+    def test_children_reference_parents(self, chunking_engine, sample_markdown_content):
         """Verify children reference their parent chunk."""
         parents, children = chunking_engine.chunk_document(
             sample_markdown_content, "hash123", "test.md"
@@ -150,7 +148,7 @@ Content for section two.
         parents, _ = chunking_engine.chunk_document(content, "hash", "test.md")
 
         header_paths = [p.header_path for p in parents]
-        
+
         assert any("Main Title" in hp for hp in header_paths)
 
 

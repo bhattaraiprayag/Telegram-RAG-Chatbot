@@ -5,10 +5,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.database.qdrant_client import (
-    QdrantDB,
     CHUNKS_COLLECTION,
-    PARENTS_COLLECTION,
     DENSE_VECTOR_SIZE,
+    PARENTS_COLLECTION,
+    QdrantDB,
 )
 
 
@@ -31,7 +31,7 @@ class TestQdrantDBInit:
 
     def test_creates_collections_on_init(self, mock_qdrant_client):
         """Verify collections are created if they don't exist."""
-        db = QdrantDB(url="http://localhost:6333")
+        _db = QdrantDB(url="http://localhost:6333")  # noqa: F841
 
         assert mock_qdrant_client.create_collection.call_count == 2
 
@@ -47,7 +47,7 @@ class TestQdrantDBInit:
             mock_collection2,
         ]
 
-        db = QdrantDB(url="http://localhost:6333")
+        _db = QdrantDB(url="http://localhost:6333")  # noqa: F841
 
         assert mock_qdrant_client.create_collection.call_count == 0
 

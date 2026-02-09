@@ -2,18 +2,17 @@
 
 import logging
 
-from telegram import Update
+from telegram import Message, Update
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
 from ..rag.orchestrator import RAGOrchestrator
 from ..utils.history import HistoryManager
 
-
 logger = logging.getLogger(__name__)
 
 
-async def safe_reply(message, text: str) -> None:
+async def safe_reply(message: Message, text: str) -> None:
     """
     Safely send a reply, falling back to plain text if Markdown parsing fails.
 
@@ -140,24 +139,35 @@ async def stats_command(
     stats_text = f"""📊 System Statistics
 
 Embedding Cache:
-• Size: {cache_stats['size']} / {cache_stats['max_size']}
-• Hit Rate: {cache_stats['hit_rate']:.1%}
-• Hits: {cache_stats['hits']} | Misses: {cache_stats['misses']}
+• Size: {cache_stats["size"]} / {cache_stats["max_size"]}
+• Hit Rate: {cache_stats["hit_rate"]:.1%}
+• Hits: {cache_stats["hits"]} | Misses: {cache_stats["misses"]}
 
 Conversation History:
-• Active Users: {history_stats['user_count']}
-• Total Messages: {history_stats['total_messages']}
-• Max Turns: {history_stats['max_turns']}
+• Active Users: {history_stats["user_count"]}
+• Total Messages: {history_stats["total_messages"]}
+• Max Turns: {history_stats["max_turns"]}
 """
 
     await update.message.reply_text(stats_text)
 
+
 async def summarize_command(
-        update: Update,
-        context: ContextTypes.DEFAULT_TYPE,
-        orchestrator: RAGOrchestrator,
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    orchestrator: RAGOrchestrator,
 ) -> None:
-    if update.message is None or not context.args:
+    """
+    Handle /summarize command to generate document summaries.
+
+    Args:
+        update: Telegram update object
+        context: Bot context with command arguments
+        orchestrator: RAG orchestrator instance
+    """
+    if update.message is None:
+        return
+    if not context.args:
         await update.message.reply_text("Usage: /summarize <filename>")
         return
 
@@ -167,10 +177,10 @@ async def summarize_command(
     response_parts = []
     async for token in orchestrator.summarize(file_name):
         response_parts.append(token)
-    
+
     response = "".join(response_parts)
     if len(response) > 4000:
         for i in range(0, len(response), 4000):
-            await safe_reply(update.message, response[i: i+4000])
+            await safe_reply(update.message, response[i : i + 4000])
     else:
         await safe_reply(update.message, response)

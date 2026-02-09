@@ -1,8 +1,6 @@
 """Tests for conversation history manager."""
 
-import pytest
-
-from app.utils.history import HistoryManager, Conversation, Message
+from app.utils.history import Conversation, HistoryManager
 
 
 class TestConversation:

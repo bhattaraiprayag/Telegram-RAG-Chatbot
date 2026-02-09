@@ -3,7 +3,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-
 HELP_TEXT = """🤖 **DocuRAG Bot - Document Q&A Assistant**
 
 I can answer questions based on documents that have been uploaded to me.

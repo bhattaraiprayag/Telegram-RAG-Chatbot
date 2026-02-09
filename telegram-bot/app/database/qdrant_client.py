@@ -6,7 +6,6 @@ from qdrant_client import QdrantClient, models
 
 from ..config import settings
 
-
 CHUNKS_COLLECTION = "chunks"
 PARENTS_COLLECTION = "parents"
 DENSE_VECTOR_SIZE = 1024
@@ -263,7 +262,6 @@ class QdrantDB:
                 break
 
         return list(files.values())
-    
 
     def delete_file(self, file_hash: str) -> None:
         """

@@ -112,6 +112,8 @@ class OpenAIProvider(ModelProvider):
                 max_tokens=max_tokens,
                 stream=False,
             )
+            # Response is ChatCompletion when stream=False
+            assert hasattr(response, "choices"), "Unexpected response type"
             return response.choices[0].message.content or ""
         except Exception as e:
             error_msg = f"OpenAI API error: {type(e).__name__} - {e}"

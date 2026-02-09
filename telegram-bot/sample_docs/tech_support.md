@@ -49,7 +49,7 @@ When escalating issues, follow this chain:
 **Issue: "Invalid token" error**
 ```
 Cause: JWT token has expired or is malformed
-Solution: 
+Solution:
 1. Log out and log back in
 2. Clear browser cookies and cache
 3. Check if user's account is active
@@ -143,10 +143,10 @@ Internal diagnostic endpoints (requires admin API key):
 ```
 Hi [Customer Name],
 
-Thank you for contacting TechCorp Support. I'm [Your Name], and I'll be 
+Thank you for contacting TechCorp Support. I'm [Your Name], and I'll be
 assisting you with this issue.
 
-I understand you're experiencing [brief summary of issue]. I'm looking 
+I understand you're experiencing [brief summary of issue]. I'm looking
 into this now and will provide an update within [response target time].
 
 In the meantime, could you please provide:
@@ -168,7 +168,7 @@ I'm pleased to confirm that the issue you reported has been resolved.
 Summary of resolution:
 [Brief explanation of what was done]
 
-Please let us know if you encounter any further issues or have 
+Please let us know if you encounter any further issues or have
 questions. We're here to help!
 
 Best regards,

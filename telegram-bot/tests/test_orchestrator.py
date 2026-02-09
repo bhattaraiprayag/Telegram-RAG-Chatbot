@@ -1,11 +1,11 @@
 """Tests for RAG orchestrator."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.rag.orchestrator import RAGOrchestrator, RetrievedContext
 from app.rag.cache import EmbeddingCache
+from app.rag.orchestrator import RAGOrchestrator, RetrievedContext
 
 
 @pytest.fixture

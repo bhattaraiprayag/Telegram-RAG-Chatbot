@@ -1,15 +1,14 @@
 """RAG orchestrator coordinating retrieval, reranking, and generation."""
 
 from dataclasses import dataclass
-from typing import Any, AsyncGenerator, Optional
 from pathlib import Path
+from typing import Any, AsyncGenerator, Optional
 
 from ..config import settings
 from ..database.qdrant_client import QdrantDB
 from ..models.model_factory import ModelFactory, OpenAIProvider
 from ..services.ml_api_client import MLAPIClient
 from .cache import EmbeddingCache
-
 
 HYBRID_SEARCH_LIMIT = 30
 RERANK_TOP_K = 5
@@ -172,12 +171,21 @@ class RAGOrchestrator:
             answer="".join(answer_parts).rstrip(),
             sources=sources,
         )
-    
+
     async def summarize(self, file_name: str) -> AsyncGenerator[str, None]:
-        search_paths = [
-            Path("sample_docs") / file_name,
-            Path("uploads") / file_name
-        ]
+        """
+        Generate a summary of a document file.
+
+        Searches for the file in sample_docs and uploads directories,
+        then streams a concise summary via the LLM provider.
+
+        Args:
+            file_name: Name of the file to summarize
+
+        Yields:
+            Summary tokens from LLM
+        """
+        search_paths = [Path("sample_docs") / file_name, Path("uploads") / file_name]
 
         content = None
         for path in search_paths:
@@ -185,14 +193,20 @@ class RAGOrchestrator:
                 with open(path, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
                 break
-        
+
         if not content:
             yield f"Could not find file: {file_name}"
             return
-        
+
         messages = [
-            {"role": "system", "content": "You are a helpful assistant that SUMMARIZES documents concisely."},
-            {"role": "user", "content": f"Please summarize this document: {file_name}.\n\nCONTENT:\n{content[:10000]}"}
+            {
+                "role": "system",
+                "content": "You are a helpful assistant that SUMMARIZES documents concisely.",
+            },
+            {
+                "role": "user",
+                "content": f"Please summarize this document: {file_name}.\n\nCONTENT:\n{content[:10000]}",
+            },
         ]
 
         # Stream from LLM provider
@@ -200,6 +214,7 @@ class RAGOrchestrator:
             messages=messages, temperature=0.3, max_tokens=1024
         ):
             yield token
+
     async def _get_query_embedding(self, query: str) -> dict[str, Any]:
         """
         Get embedding for query, using cache if available.

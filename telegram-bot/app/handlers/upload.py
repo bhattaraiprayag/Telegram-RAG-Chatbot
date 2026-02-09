@@ -12,7 +12,6 @@ from ..chunking import ChunkingEngine
 from ..database import QdrantDB
 from ..services.ml_api_client import MLAPIClient
 
-
 UPLOAD_DIR = Path("./uploads")
 ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx", ".doc", ".epub"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -69,7 +68,7 @@ async def handle_document(
     try:
         # Download file
         file = await context.bot.get_file(document.file_id)
-        
+
         UPLOAD_DIR.mkdir(exist_ok=True)
         file_path = UPLOAD_DIR / file_name
 
@@ -213,15 +212,12 @@ async def list_files_command(
 
     if not files:
         await update.message.reply_text(
-            "📂 No documents have been indexed yet.\n"
-            "Upload a document to get started!",
+            "📂 No documents have been indexed yet.\nUpload a document to get started!",
             parse_mode="Markdown",
         )
         return
 
-    file_list = "\n".join(
-        f"• `{f['file_name']}`" for f in files
-    )
+    file_list = "\n".join(f"• `{f['file_name']}`" for f in files)
 
     await update.message.reply_text(
         f"📂 **Indexed Documents ({len(files)}):**\n\n{file_list}",

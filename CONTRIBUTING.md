@@ -29,7 +29,7 @@ Thank you for your interest in contributing to the Telegram RAG Chatbot! This do
    ```bash
    # Windows
    .\.venv\Scripts\Activate.ps1
-   
+
    # Linux/Mac
    source .venv/bin/activate
    ```
@@ -193,7 +193,7 @@ ml-api/
    ) -> None:
        """
        Handle /newcommand.
-       
+
        Args:
            update: Telegram update object
            context: Bot context
@@ -205,7 +205,7 @@ ml-api/
    ```python
    async def new_handler(update, context):
        await new_command(update, context, self.dependency)
-   
+
    app.add_handler(CommandHandler("newcommand", new_handler))
    ```
 
@@ -234,10 +234,10 @@ async def test_feature_description():
     """Test that feature behaves correctly under condition."""
     # Arrange
     input_data = prepare_test_data()
-    
+
     # Act
     result = await function_under_test(input_data)
-    
+
     # Assert
     assert result == expected_value
 ```

@@ -119,7 +119,7 @@ flowchart TB
         subgraph PublicSubnet["Public Subnet"]
             ALB[Application Load Balancer]
         end
-        
+
         subgraph PrivateSubnet["Private Subnet"]
             subgraph ECS["ECS Cluster"]
                 Bot[telegram-bot<br>Fargate]
@@ -128,7 +128,7 @@ flowchart TB
             Qdrant[(Qdrant<br>ECS/EC2)]
         end
     end
-    
+
     Internet((Internet)) --> ALB
     ALB --> Bot
     Bot --> ML
@@ -204,13 +204,13 @@ Switch from polling to webhook for better reliability:
 # In telegram-bot/app/main.py, modify run() method:
 async def run(self) -> None:
     app = self.create_application()
-    
+
     # Webhook configuration
     await app.bot.set_webhook(
         url="https://your-domain.com/webhook",
         secret_token=os.environ.get("WEBHOOK_SECRET")
     )
-    
+
     # Start webhook server
     await app.run_webhook(
         listen="0.0.0.0",
